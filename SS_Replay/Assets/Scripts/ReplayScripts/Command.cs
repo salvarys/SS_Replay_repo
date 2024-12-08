@@ -1,5 +1,4 @@
-public interface ICommand
+public abstract class Command
 {
-    void Execute();
+    public abstract void Execute(); 
 }
-

@@ -1,62 +1,57 @@
 using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
 
 public class ReplayManager : MonoBehaviour
 {
-    public Transform player; // Assign the player GameObject in the Inspector
-    public Text replayText; // Assign a UI Text for "Replay" message
-    public float replaySpeed = 5f; // Replay execution speed
+    public Transform player; // Assign the player object
+    public Text replayText;  // Assign a Text UI element
+    public GameManager gameManager; // Reference to GameManager
 
-    private RecordPlayerCommand replayCommand; // Replay command
-    private bool isReplaying = false;
+    private CommandInvoker invoker;
 
     void Start()
     {
-        // Initialize the replay command
-        replayCommand = new RecordPlayerCommand(player);
+        invoker = new CommandInvoker();
+        invoker.Initialize(player);
 
-        // Hide replay text initially
         if (replayText != null)
         {
             replayText.enabled = false;
+        }
+
+        if (gameManager == null)
+        {
+            Debug.LogError("GameManager not assigned in ReplayManager!");
         }
     }
 
     void Update()
     {
-        // Record player position if not replaying
-        if (!isReplaying)
+        if (!invoker.IsReplaying())
         {
-            replayCommand.RecordPosition(player.position);
+            invoker.Record(player.position);
         }
-
-        // Trigger replay on death (replace with your game's death condition)
-        if (Input.GetKeyDown(KeyCode.K))
+        else
         {
-            StartReplay();
-        }
-
-        // Execute replay logic
-        if (isReplaying)
-        {
-            ExecuteReplay();
+            invoker.ExecuteReplay();
         }
     }
 
-    // Start the replay process
-    public void StartReplay()
+    private void OnCollisionEnter(Collision collision)
     {
-        if (replayCommand.IsReplayComplete())
+        if (collision.collider.CompareTag("Obstacle"))
         {
-            Debug.LogWarning("No positions recorded to replay.");
-            return;
+            Debug.Log("Player collided with an obstacle. Game Over.");
+            gameManager.GameOver(); // Trigger Game Over in GameManager
+            StartReplay();           // Start replay after game over
         }
+    }
 
-        isReplaying = true;
-        Debug.Log("Replay started!");
+    private void StartReplay()
+    {
+        if (invoker.IsReplaying()) return;
 
-        // Show replay text
+        invoker.Replay();
         if (replayText != null)
         {
             replayText.enabled = true;
@@ -64,45 +59,16 @@ public class ReplayManager : MonoBehaviour
         }
     }
 
-    // Execute replay logic
-    private void ExecuteReplay()
+    private System.Collections.IEnumerator FlashReplayText()
     {
-        if (!replayCommand.IsReplayComplete())
+        while (invoker.IsReplaying())
         {
-            replayCommand.Execute();
-        }
-        else
-        {
-            EndReplay();
-        }
-    }
-
-    // End the replay process
-    private void EndReplay()
-    {
-        isReplaying = false;
-
-        // Hide replay text
-        if (replayText != null)
-        {
-            replayText.enabled = false;
+            replayText.color = Color.red;
+            yield return new WaitForSeconds(0.3f);
+            replayText.color = Color.clear;
+            yield return new WaitForSeconds(0.3f);
         }
 
-        Debug.Log("Replay finished.");
-    }
-
-    // Flash the "Replay" text on the screen
-    private IEnumerator FlashReplayText()
-    {
-        while (isReplaying)
-        {
-            if (replayText != null)
-            {
-                replayText.color = Color.red;
-                yield return new WaitForSeconds(0.5f);
-                replayText.color = Color.clear;
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
+        replayText.enabled = false;
     }
 }
