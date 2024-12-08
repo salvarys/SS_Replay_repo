@@ -67,6 +67,14 @@ public class ReplayManager : MonoBehaviour
             yield return new WaitForSeconds(0.3f);
             replayText.color = Color.clear;
             yield return new WaitForSeconds(0.3f);
+                
+                
+                
+                
+                
+                
+                
+            
         }
 
         replayText.enabled = false;
